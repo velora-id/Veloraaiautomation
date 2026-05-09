@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -47,6 +47,7 @@ import {
   Brain,
 } from "lucide-react";
 import { toast } from "sonner";
+import { get, post, APIResponse, PaginatedResponse } from "../services/api";
 import { AgentDetailsDialog } from "../components/AgentDetailsDialog";
 
 const prebuiltAgents = [
@@ -102,24 +103,15 @@ const prebuiltAgents = [
   },
 ];
 
-const customAgents = [
-  {
-    id: 101,
-    name: "Product Review Analyzer",
-    description: "Custom agent to analyze product reviews and extract insights",
-    prompt: "Analyze product reviews and provide sentiment analysis...",
-    runs: 89,
-    createdAt: "2026-04-15",
-  },
-  {
-    id: 102,
-    name: "Invoice Processor",
-    description: "Extract data from invoices and update accounting system",
-    prompt: "Process incoming invoices and extract key information...",
-    runs: 156,
-    createdAt: "2026-04-10",
-  },
-];
+interface Agent {
+  id: string;
+  name: string;
+  description?: string;
+  status: string;
+  total_executions: number;
+  created_at?: string;
+  createdAt?: string;
+}
 
 const agentHistory = [
   {
@@ -169,11 +161,79 @@ export function AgentsPage() {
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [selectedAgentType, setSelectedAgentType] = useState<"prebuilt" | "custom">("prebuilt");
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [customAgents, setCustomAgents] = useState<Agent[]>([]);
+  const [agentsLoading, setAgentsLoading] = useState(false);
+  const [creatingAgent, setCreatingAgent] = useState(false);
 
-  const handleCreateAgent = () => {
-    toast.success("Custom agent created successfully!");
-    setIsCreateDialogOpen(false);
-    resetForm();
+  useEffect(() => {
+    const loadAgents = async () => {
+      setAgentsLoading(true);
+      try {
+        const response = await get<PaginatedResponse<Agent>>("/agents");
+        if (response.data) {
+          setCustomAgents(
+            response.data.map((agent) => ({
+              ...agent,
+              createdAt:
+                agent.createdAt ??
+                agent.created_at ??
+                new Date().toLocaleDateString(),
+            }))
+          );
+        }
+      } catch (error) {
+        toast.error((error as Error).message || "Failed to load agents");
+      } finally {
+        setAgentsLoading(false);
+      }
+    };
+
+    loadAgents();
+  }, []);
+
+  const handleCreateAgent = async () => {
+    if (!newAgentName || !newAgentDescription || !newAgentPrompt) {
+      toast.error("Please fill in the required agent details");
+      return;
+    }
+
+    setCreatingAgent(true);
+    try {
+      const response = await post<APIResponse<Agent>>("/agents", {
+        name: newAgentName,
+        description: newAgentDescription,
+        agent_type: "custom",
+        system_prompt: newAgentPrompt,
+        temperature: Math.round(temperature[0] * 100),
+        max_tokens: maxTokens[0],
+        ai_model: selectedModel,
+        icon: "bot",
+        color: "purple",
+      });
+
+      if (!response.data) {
+        throw new Error(response.message || "Agent creation failed");
+      }
+
+      setCustomAgents((items) => [
+        {
+          ...response.data,
+          createdAt:
+            response.data.createdAt ??
+            response.data.created_at ??
+            new Date().toLocaleDateString(),
+        },
+        ...items,
+      ]);
+
+      toast.success("Custom agent created successfully!");
+      setIsCreateDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      toast.error((error as Error).message || "Failed to create agent");
+    } finally {
+      setCreatingAgent(false);
+    }
   };
 
   const resetForm = () => {
@@ -232,8 +292,27 @@ export function AgentsPage() {
     setNewAgentPrompt(newAgentPrompt + `{{${variable}}}`);
   };
 
-  const handleRunAgent = (agentName: string) => {
-    toast.success(`${agentName} started running`);
+  const handleRunAgent = async (agentName: string, agentId?: string) => {
+    if (!agentId) {
+      toast.success(`${agentName} started running`);
+      return;
+    }
+
+    try {
+      const response = await post<APIResponse<{ output?: string }>>(
+        `/agents/${agentId}/execute`,
+        {
+          input_text:
+            testInput || `Run ${agentName} using your agent settings`,
+        }
+      );
+      toast.success(response.message || `${agentName} executed successfully`);
+      if (response.data?.output) {
+        setTestOutput(response.data.output);
+      }
+    } catch (error) {
+      toast.error((error as Error).message || `Failed to run ${agentName}`);
+    }
   };
 
   return (
@@ -908,13 +987,13 @@ export function AgentsPage() {
                     {agent.description}
                   </p>
                   <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    <span>{agent.runs} runs</span>
+                    <span>{agent.total_executions} runs</span>
                     <span>Created {agent.createdAt}</span>
                   </div>
                   <div className="flex gap-2">
                     <Button
                       className="flex-1"
-                      onClick={() => handleRunAgent(agent.name)}
+                      onClick={() => handleRunAgent(agent.name, agent.id)}
                     >
                       <Play className="size-4 mr-2" />
                       Run

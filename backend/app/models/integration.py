@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, Boolean, Text, ForeignKey, Enum as SQLEnum
+from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSON
 import enum
 from app.models.base import BaseModel

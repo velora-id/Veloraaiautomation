@@ -35,7 +35,7 @@ class UsageLog(BaseModel):
     error_message = Column(Text, nullable=True)
 
     # Metadata
-    metadata = Column(JSON, nullable=True)  # Additional context
+    extra_metadata = Column(JSON, nullable=True)  # Additional context
 
     # Relationships
     organization = relationship("Organization", back_populates="usage_logs")

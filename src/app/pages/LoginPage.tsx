@@ -23,7 +23,7 @@ export function LoginPage() {
       toast.success("Welcome back!");
       navigate("/app");
     } catch (error) {
-      toast.error("Invalid credentials");
+      toast.error((error as Error).message || "Invalid credentials");
     } finally {
       setLoading(false);
     }

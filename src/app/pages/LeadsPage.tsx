@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -36,71 +36,23 @@ import {
   Star,
   MessageSquare,
   TrendingUp,
-  Clock,
 } from "lucide-react";
+import { toast } from "sonner";
+import { get } from "../services/api";
+import { PaginatedResponse } from "../services/api";
 
-const leads = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    email: "sarah.j@techcorp.com",
-    company: "TechCorp Inc",
-    phone: "+1 (555) 123-4567",
-    score: 92,
-    stage: "qualified",
-    source: "Website Form",
-    lastContact: "2 days ago",
-    notes: 3,
-  },
-  {
-    id: 2,
-    name: "Michael Chen",
-    email: "m.chen@innovate.io",
-    company: "Innovate.io",
-    phone: "+1 (555) 234-5678",
-    score: 85,
-    stage: "contacted",
-    source: "LinkedIn",
-    lastContact: "5 days ago",
-    notes: 1,
-  },
-  {
-    id: 3,
-    name: "Emily Rodriguez",
-    email: "emily.r@growth.co",
-    company: "Growth Co",
-    phone: "+1 (555) 345-6789",
-    score: 78,
-    stage: "new",
-    source: "AI Generated",
-    lastContact: "1 day ago",
-    notes: 0,
-  },
-  {
-    id: 4,
-    name: "David Park",
-    email: "d.park@scaleup.com",
-    company: "ScaleUp LLC",
-    phone: "+1 (555) 456-7890",
-    score: 95,
-    stage: "qualified",
-    source: "Referral",
-    lastContact: "3 hours ago",
-    notes: 5,
-  },
-  {
-    id: 5,
-    name: "Lisa Anderson",
-    email: "lisa@future.ai",
-    company: "Future AI",
-    phone: "+1 (555) 567-8901",
-    score: 88,
-    stage: "contacted",
-    source: "Cold Outreach",
-    lastContact: "1 week ago",
-    notes: 2,
-  },
-];
+interface Lead {
+  id: string;
+  name: string;
+  email: string;
+  company: string;
+  phone?: string;
+  score: number;
+  stage: string;
+  source: string;
+  last_contact?: string;
+  notes?: number;
+}
 
 const stageColors: Record<string, string> = {
   new: "secondary",
@@ -118,9 +70,33 @@ const stats = [
 ];
 
 export function LeadsPage() {
-  const [selectedLead, setSelectedLead] = useState<typeof leads[0] | null>(null);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [stageFilter, setStageFilter] = useState("all");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const loadLeads = async () => {
+      setLoading(true);
+
+      try {
+        const response = await get<PaginatedResponse<Lead>>("/leads");
+        setLeads(
+          response.data.map((lead) => ({
+            ...lead,
+            last_contact: lead.last_contact ?? "N/A",
+          }))
+        );
+      } catch (error) {
+        toast.error((error as Error).message || "Failed to load leads");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadLeads();
+  }, []);
 
   const filteredLeads = leads.filter((lead) => {
     const matchesSearch =
@@ -140,7 +116,6 @@ export function LeadsPage() {
         </p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => {
           const Icon = stat.icon;
@@ -161,7 +136,6 @@ export function LeadsPage() {
         })}
       </div>
 
-      {/* Filters */}
       <Card className="p-4">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
@@ -193,7 +167,6 @@ export function LeadsPage() {
         </div>
       </Card>
 
-      {/* Leads Table */}
       <Card>
         <Table>
           <TableHeader>
@@ -208,60 +181,77 @@ export function LeadsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredLeads.map((lead) => (
-              <TableRow
-                key={lead.id}
-                className="cursor-pointer"
-                onClick={() => setSelectedLead(lead)}
-              >
-                <TableCell>
-                  <div>
-                    <p className="font-medium">{lead.name}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {lead.email}
-                    </p>
-                  </div>
-                </TableCell>
-                <TableCell>{lead.company}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-purple-600"
-                        style={{ width: `${lead.score}%` }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium">{lead.score}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={stageColors[lead.stage] as any}>
-                    {lead.stage}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-sm text-gray-600 dark:text-gray-400">
-                  {lead.source}
-                </TableCell>
-                <TableCell className="text-sm text-gray-600 dark:text-gray-400">
-                  {lead.lastContact}
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="icon">
-                      <Mail className="size-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Phone className="size-4" />
-                    </Button>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7}>
+                  <div className="py-8 text-center text-gray-500 dark:text-gray-400">
+                    Loading leads...
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
+            ) : filteredLeads.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7}>
+                  <div className="py-8 text-center text-gray-500 dark:text-gray-400">
+                    No leads found.
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredLeads.map((lead) => (
+                <TableRow
+                  key={lead.id}
+                  className="cursor-pointer"
+                  onClick={() => setSelectedLead(lead)}
+                >
+                  <TableCell>
+                    <div>
+                      <p className="font-medium">{lead.name}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {lead.email}
+                      </p>
+                    </div>
+                  </TableCell>
+                  <TableCell>{lead.company}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-purple-600"
+                          style={{ width: `${lead.score}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium">{lead.score}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={stageColors[lead.stage] as any}>
+                      {lead.stage}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+                    {lead.source}
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+                    {lead.last_contact ?? "—"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="icon">
+                        <Mail className="size-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon">
+                        <Phone className="size-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </Card>
 
-      {/* Lead Details Dialog */}
       <Dialog open={!!selectedLead} onOpenChange={() => setSelectedLead(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -271,9 +261,7 @@ export function LeadsPage() {
             <div className="space-y-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="text-2xl font-bold mb-2">
-                    {selectedLead.name}
-                  </h3>
+                  <h3 className="text-2xl font-bold mb-2">{selectedLead.name}</h3>
                   <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                     <div className="flex items-center gap-2">
                       <Building className="size-4" />
@@ -285,7 +273,7 @@ export function LeadsPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Phone className="size-4" />
-                      {selectedLead.phone}
+                      {selectedLead.phone ?? "N/A"}
                     </div>
                   </div>
                 </div>
@@ -293,9 +281,7 @@ export function LeadsPage() {
                   <div className="text-3xl font-bold text-purple-600 mb-1">
                     {selectedLead.score}
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Lead Score
-                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Lead Score</p>
                 </div>
               </div>
 

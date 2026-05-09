@@ -35,7 +35,7 @@ class ActivityLog(BaseModel):
     entity_type = Column(String(50), nullable=True)  # agent, workflow, lead, etc.
 
     # Metadata
-    metadata = Column(JSON, nullable=True)
+    extra_metadata = Column(JSON, nullable=True)
 
     # Relationships
     organization = relationship("Organization", back_populates="activity_logs")

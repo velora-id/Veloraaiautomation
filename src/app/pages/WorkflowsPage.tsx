@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -33,9 +33,19 @@ import {
 import { toast } from "sonner";
 import { WorkflowBuilder } from "../components/workflow/WorkflowBuilder";
 
+interface WorkflowItem {
+  id: string;
+  name: string;
+  description?: string;
+  trigger_type: string;
+  status: string;
+  total_executions: number;
+  last_executed_at?: string;
+}
+
 const workflows = [
   {
-    id: 1,
+    id: "1",
     name: "Lead Enrichment Pipeline",
     description: "Form submission → Enrich lead data → Score lead → Notify sales team",
     trigger: "Form Submission",
@@ -45,7 +55,7 @@ const workflows = [
     lastRun: "5 minutes ago",
   },
   {
-    id: 2,
+    id: "2",
     name: "Email Follow-up Campaign",
     description: "New lead → Generate personalized email → Send via Gmail → Log to CRM",
     trigger: "New Lead",
@@ -55,7 +65,7 @@ const workflows = [
     lastRun: "1 hour ago",
   },
   {
-    id: 3,
+    id: "3",
     name: "Customer Support Automation",
     description: "Support ticket → AI categorize → Auto-respond or escalate",
     trigger: "Support Ticket",
@@ -65,7 +75,7 @@ const workflows = [
     lastRun: "12 minutes ago",
   },
   {
-    id: 4,
+    id: "4",
     name: "Content Publishing Workflow",
     description: "Schedule → AI generate content → Review → Post to social media",
     trigger: "Scheduled",
@@ -106,18 +116,76 @@ export function WorkflowsPage() {
   const [showBuilder, setShowBuilder] = useState(false);
   const [currentWorkflowId, setCurrentWorkflowId] = useState<string | null>(null);
   const [currentWorkflowName, setCurrentWorkflowName] = useState("");
+  const [workflowList, setWorkflowList] = useState<WorkflowItem[]>([]);
+  const [loadingWorkflows, setLoadingWorkflows] = useState(false);
+  const [creatingWorkflow, setCreatingWorkflow] = useState(false);
+  const displayedWorkflows = workflowList.length > 0 ? workflowList : workflows;
 
-  const handleCreateWorkflow = () => {
+  useEffect(() => {
+    const loadWorkflows = async () => {
+      setLoadingWorkflows(true);
+      try {
+        const response = await get<PaginatedResponse<WorkflowItem>>("/workflows");
+        if (response.data) {
+          setWorkflowList(response.data);
+        }
+      } catch (error) {
+        toast.error((error as Error).message || "Failed to load workflows");
+      } finally {
+        setLoadingWorkflows(false);
+      }
+    };
+
+    loadWorkflows();
+  }, []);
+
+  const handleCreateWorkflow = async () => {
     if (!workflowName || !triggerType) {
       toast.error("Please fill in all fields");
       return;
     }
-    setCurrentWorkflowName(workflowName);
-    setCurrentWorkflowId(null);
-    setIsCreateDialogOpen(false);
-    setShowBuilder(true);
-    setWorkflowName("");
-    setTriggerType("");
+
+    setCreatingWorkflow(true);
+    try {
+      const triggerMap: Record<string, string> = {
+        form: "event",
+        email: "event",
+        webhook: "webhook",
+        schedule: "schedule",
+        lead: "event",
+      };
+
+      const response = await post<APIResponse<WorkflowItem>>("/workflows", {
+        name: workflowName,
+        description: `Automated workflow created from UI using the ${triggerType} trigger`,
+        trigger_type: triggerMap[triggerType] ?? "manual",
+        nodes: [
+          {
+            id: "trigger-node",
+            type: "trigger",
+            name: "Trigger",
+            config: {},
+          },
+        ],
+        edges: [],
+      });
+
+      if (!response.data) {
+        throw new Error(response.message || "Workflow creation failed");
+      }
+
+      setWorkflowList((items) => [response.data, ...items]);
+      setCurrentWorkflowName(workflowName);
+      setCurrentWorkflowId(response.data.id);
+      setShowBuilder(true);
+      setWorkflowName("");
+      setTriggerType("");
+      toast.success("Workflow created successfully");
+    } catch (error) {
+      toast.error((error as Error).message || "Failed to create workflow");
+    } finally {
+      setCreatingWorkflow(false);
+    }
   };
 
   const handleToggleWorkflow = (id: number, currentStatus: string) => {
@@ -217,7 +285,7 @@ export function WorkflowsPage() {
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Active Workflows</h2>
         <div className="grid grid-cols-1 gap-4">
-          {workflows.map((workflow) => (
+          {displayedWorkflows.map((workflow) => (
             <Card key={workflow.id} className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-start gap-4 flex-1">

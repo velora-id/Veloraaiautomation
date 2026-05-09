@@ -4,119 +4,171 @@ import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Search, Check, Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { get, post, APIResponse, PaginatedResponse } from "../services/api";
 
-const integrations = [
+const defaultIntegrations: IntegrationItem[] = [
   {
-    id: 1,
+    id: "1",
     name: "Gmail",
     category: "Email",
     description: "Send automated emails and sync conversations",
     icon: "📧",
     connected: true,
     popular: true,
+    status: "connected",
+    is_active: true,
   },
   {
-    id: 2,
+    id: "2",
     name: "Google Sheets",
     category: "Spreadsheets",
     description: "Read and write data to Google Sheets",
     icon: "📊",
     connected: true,
     popular: true,
+    status: "connected",
+    is_active: true,
   },
   {
-    id: 3,
+    id: "3",
     name: "Slack",
     category: "Communication",
     description: "Send notifications and messages to Slack channels",
     icon: "💬",
     connected: false,
     popular: true,
+    status: "disconnected",
+    is_active: false,
   },
   {
-    id: 4,
+    id: "4",
     name: "WhatsApp Business",
     category: "Messaging",
     description: "Send automated WhatsApp messages to customers",
     icon: "📱",
     connected: false,
     popular: true,
+    status: "disconnected",
+    is_active: false,
   },
   {
-    id: 5,
+    id: "5",
     name: "Salesforce",
     category: "CRM",
     description: "Sync leads and contacts with Salesforce",
     icon: "☁️",
     connected: true,
     popular: false,
+    status: "connected",
+    is_active: true,
   },
   {
-    id: 6,
+    id: "6",
     name: "HubSpot",
     category: "CRM",
     description: "Integrate with HubSpot CRM and Marketing Hub",
     icon: "🎯",
     connected: false,
     popular: true,
+    status: "disconnected",
+    is_active: false,
   },
   {
-    id: 7,
+    id: "7",
     name: "Stripe",
     category: "Payments",
     description: "Process payments and manage subscriptions",
     icon: "💳",
     connected: false,
     popular: false,
+    status: "disconnected",
+    is_active: false,
   },
   {
-    id: 8,
+    id: "8",
     name: "Zapier",
     category: "Automation",
     description: "Connect to 5,000+ apps via Zapier",
     icon: "⚡",
     connected: false,
     popular: true,
+    status: "disconnected",
+    is_active: false,
   },
   {
-    id: 9,
+    id: "9",
     name: "Webhook",
     category: "Custom",
     description: "Send data to any HTTP endpoint",
     icon: "🔗",
     connected: true,
     popular: false,
+    status: "connected",
+    is_active: true,
   },
   {
-    id: 10,
+    id: "10",
     name: "LinkedIn",
     category: "Social",
     description: "Automate LinkedIn outreach and lead generation",
     icon: "💼",
     connected: false,
     popular: false,
+    status: "disconnected",
+    is_active: false,
   },
   {
-    id: 11,
+    id: "11",
     name: "Twitter/X",
     category: "Social",
     description: "Post tweets and monitor mentions",
     icon: "🐦",
     connected: false,
     popular: false,
+    status: "disconnected",
+    is_active: false,
   },
   {
-    id: 12,
+    id: "12",
     name: "Notion",
     category: "Productivity",
     description: "Create and update Notion pages and databases",
     icon: "📝",
     connected: false,
     popular: false,
+    status: "disconnected",
+    is_active: false,
   },
 ];
+
+interface IntegrationItem {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  icon?: string;
+  integration_type?: string;
+  connected: boolean;
+  popular?: boolean;
+  status: string;
+  is_active: boolean;
+}
+
+const integrationTypeIcons: Record<string, string> = {
+  gmail: "📧",
+  google_sheets: "📊",
+  slack: "💬",
+  whatsapp: "📱",
+  salesforce: "☁️",
+  hubspot: "🎯",
+  stripe: "💳",
+  zapier: "⚡",
+  webhook: "🔗",
+  linkedin: "💼",
+  custom_api: "🔧",
+};
 
 const categories = [
   "All",
@@ -133,6 +185,36 @@ const categories = [
 export function IntegrationsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [integrations, setIntegrations] = useState<IntegrationItem[]>(defaultIntegrations);
+  const [loadingIntegrations, setLoadingIntegrations] = useState(false);
+
+  useEffect(() => {
+    const loadIntegrations = async () => {
+      setLoadingIntegrations(true);
+      try {
+        const response = await get<PaginatedResponse<IntegrationItem>>("/integrations");
+        if (response.data) {
+          setIntegrations(
+            response.data.map((integration) => ({
+              ...integration,
+              connected:
+                integration.status === "connected" || integration.is_active,
+              icon:
+                integration.icon ||
+                integrationTypeIcons[integration.integration_type ?? ""] ||
+                "🔌",
+            }))
+          );
+        }
+      } catch (error) {
+        toast.error((error as Error).message || "Failed to load integrations");
+      } finally {
+        setLoadingIntegrations(false);
+      }
+    };
+
+    loadIntegrations();
+  }, []);
 
   const filteredIntegrations = integrations.filter((integration) => {
     const matchesSearch =
@@ -150,12 +232,36 @@ export function IntegrationsPage() {
     (i) => !i.connected
   );
 
-  const handleConnect = (name: string) => {
-    toast.success(`${name} connected successfully!`);
+  const handleConnect = async (integration: IntegrationItem) => {
+    try {
+      await post<APIResponse>(`/integrations/${integration.id}/connect`, {});
+      setIntegrations((items) =>
+        items.map((item) =>
+          item.id === integration.id
+            ? { ...item, connected: true, status: "connected", is_active: true }
+            : item
+        )
+      );
+      toast.success(`${integration.name} connected successfully!`);
+    } catch (error) {
+      toast.error((error as Error).message || `Failed to connect ${integration.name}`);
+    }
   };
 
-  const handleDisconnect = (name: string) => {
-    toast.success(`${name} disconnected`);
+  const handleDisconnect = async (integration: IntegrationItem) => {
+    try {
+      await post<APIResponse>(`/integrations/${integration.id}/disconnect`, {});
+      setIntegrations((items) =>
+        items.map((item) =>
+          item.id === integration.id
+            ? { ...item, connected: false, status: "disconnected", is_active: false }
+            : item
+        )
+      );
+      toast.success(`${integration.name} disconnected`);
+    } catch (error) {
+      toast.error((error as Error).message || `Failed to disconnect ${integration.name}`);
+    }
   };
 
   return (
