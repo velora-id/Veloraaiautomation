@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import {
@@ -11,7 +12,9 @@ import {
   ArrowRight,
   Zap,
   CreditCard,
+  Loader2,
 } from "lucide-react";
+import { get, APIResponse } from "../services/api";
 import {
   LineChart,
   Line,
@@ -122,7 +125,61 @@ const recentActivity = [
   },
 ];
 
+interface UsageData {
+  billing_plan: string;
+  api_credits: {
+    used: number;
+    limit: number;
+    percentage: number;
+  };
+  ai_agents: {
+    count: number;
+    limit: number;
+  };
+  workflows: {
+    count: number;
+    limit: number;
+  };
+  leads: {
+    count: number;
+  };
+}
+
 export function Dashboard() {
+  const [usageDataState, setUsageDataState] = useState<UsageData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUsage = async () => {
+      try {
+        const res = await get<APIResponse<UsageData>>("/organizations/usage");
+        if (res.success && res.data) {
+          setUsageDataState(res.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch usage data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsage();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[400px]">
+        <Loader2 className="size-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
+
+  const creditsUsed = usageDataState?.api_credits.used || 0;
+  const activeWorkflows = usageDataState?.workflows.count || 0;
+  const leadsGenerated = usageDataState?.leads.count || 0;
+  const creditsLimit = usageDataState?.api_credits.limit || 50000;
+  const workflowsLimit = usageDataState?.workflows.limit || 5000;
+
   return (
     <div className="space-y-6">
       <div>
@@ -136,14 +193,14 @@ export function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricStatsCard
           label="Total AI Credits Used"
-          value="28,543"
+          value={creditsUsed.toLocaleString()}
           change={12.5}
           icon={Activity}
           color="purple"
         />
         <MetricStatsCard
           label="Active Workflows"
-          value="24"
+          value={activeWorkflows.toString()}
           change={3}
           changeLabel="+3 this week"
           icon={Workflow}
@@ -151,7 +208,7 @@ export function Dashboard() {
         />
         <MetricStatsCard
           label="Leads Generated"
-          value="1,247"
+          value={leadsGenerated.toLocaleString()}
           change={18.2}
           icon={Users}
           color="green"
@@ -169,15 +226,15 @@ export function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <UsageStatsCard
           label="API Credits"
-          used={28543}
-          total={50000}
+          used={creditsUsed}
+          total={creditsLimit}
           icon={Zap}
           color="purple"
         />
         <UsageStatsCard
           label="Workflow Executions"
-          used={1247}
-          total={5000}
+          used={activeWorkflows}
+          total={workflowsLimit}
           icon={Workflow}
           color="blue"
         />

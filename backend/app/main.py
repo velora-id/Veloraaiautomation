@@ -26,14 +26,14 @@ async def lifespan(app: FastAPI):
     Startup and shutdown events
     """
     # Startup
-    print("🚀 Starting Velora AI Backend...")
+    print("[START] Starting Velora AI Backend...")
     await init_db()
-    print("✅ Database initialized")
+    print("[OK] Database initialized")
     yield
     # Shutdown
-    print("🛑 Shutting down Velora AI Backend...")
+    print("[STOP] Shutting down Velora AI Backend...")
     await close_db()
-    print("✅ Database connections closed")
+    print("[OK] Database connections closed")
 
 
 # Create FastAPI application
@@ -69,7 +69,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     if settings.DEBUG:
         import traceback
         error_detail = traceback.format_exc()
-        print(f"❌ Error: {error_detail}")
+        print(f"[ERROR] Error: {error_detail}")
 
     return JSONResponse(
         status_code=500,

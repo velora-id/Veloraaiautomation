@@ -1,5 +1,5 @@
 from typing import List, Optional, Union
-from pydantic import AnyHttpUrl, validator, PostgresDsn
+from pydantic import AnyHttpUrl, validator
 from pydantic_settings import BaseSettings
 import secrets
 
@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     RELOAD: bool = True
 
     # Database
-    DATABASE_URL: PostgresDsn
+    DATABASE_URL: str
     DATABASE_POOL_SIZE: int = 20
     DATABASE_MAX_OVERFLOW: int = 0
 
