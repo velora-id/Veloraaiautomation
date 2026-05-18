@@ -39,6 +39,22 @@ class AIAgentUpdate(BaseModel):
     color: Optional[str] = Field(None, max_length=20)
 
 
+class AIAgentExecuteRequest(BaseModel):
+    input_text: str = Field(..., min_length=1)
+    context: Optional[Dict[str, Any]] = None
+
+
+class AIAgentExecuteResponse(BaseModel):
+    agent_id: UUID
+    input: str
+    output: str
+    model: str
+    tokens_used: int
+    prompt_tokens: int
+    completion_tokens: int
+    duration_ms: int
+
+
 class AIAgent(AIAgentBase):
     id: UUID
     organization_id: UUID

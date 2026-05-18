@@ -1,4 +1,7 @@
-import google.generativeai as genai
+import os
+
+os.environ.setdefault("PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION", "python")
+
 from typing import Optional, Dict, Any, List
 from app.core.config import settings
 
@@ -9,9 +12,23 @@ class GeminiService:
     """
 
     def __init__(self):
-        if settings.GEMINI_API_KEY:
-            genai.configure(api_key=settings.GEMINI_API_KEY)
         self.model = None
+        self.model_name = None
+        self._genai = None
+
+    def _load_client(self):
+        """
+        Lazily import the Google SDK so the API can start even when the
+        optional AI provider dependency has a local runtime issue.
+        """
+        if self._genai is None:
+            import google.generativeai as genai
+
+            if settings.GEMINI_API_KEY:
+                genai.configure(api_key=settings.GEMINI_API_KEY)
+            self._genai = genai
+
+        return self._genai
 
     def initialize_model(self, model_name: str = "gemini-pro"):
         """
@@ -20,7 +37,9 @@ class GeminiService:
         if not settings.GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY not configured")
 
+        genai = self._load_client()
         self.model = genai.GenerativeModel(model_name)
+        self.model_name = model_name
         return self.model
 
     async def generate_text(
@@ -29,6 +48,7 @@ class GeminiService:
         system_prompt: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: int = 1000,
+        model_name: str = "gemini-pro",
         **kwargs
     ) -> Dict[str, Any]:
         """
@@ -44,8 +64,8 @@ class GeminiService:
             Dictionary with generated text and metadata
         """
         try:
-            if not self.model:
-                self.initialize_model()
+            if not self.model or self.model_name != model_name:
+                self.initialize_model(model_name)
 
             # Combine system prompt with user prompt
             full_prompt = prompt
@@ -53,6 +73,7 @@ class GeminiService:
                 full_prompt = f"{system_prompt}\n\nUser: {prompt}\n\nAssistant:"
 
             # Generate content
+            genai = self._load_client()
             generation_config = genai.types.GenerationConfig(
                 temperature=temperature,
                 max_output_tokens=max_tokens,
@@ -70,7 +91,7 @@ class GeminiService:
 
             return {
                 "text": response.text,
-                "model": "gemini-pro",
+                "model": model_name,
                 "tokens_used": int(prompt_tokens + completion_tokens),
                 "prompt_tokens": int(prompt_tokens),
                 "completion_tokens": int(completion_tokens),

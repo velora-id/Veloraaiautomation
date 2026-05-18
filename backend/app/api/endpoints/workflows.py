@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 from uuid import UUID
+from datetime import datetime
 
 from app.core.database import get_db
 from app.api.deps import (
@@ -15,6 +16,7 @@ from app.models.organization import Organization
 from app.models.workflow import Workflow, WorkflowStatus
 from app.schemas.workflow import Workflow as WorkflowSchema, WorkflowCreate, WorkflowUpdate
 from app.schemas.api_response import APIResponse, PaginatedResponse
+from app.services.workflow_service import workflow_service
 
 router = APIRouter()
 
@@ -197,14 +199,13 @@ async def delete_workflow(
 @router.post("/{workflow_id}/execute", response_model=APIResponse)
 async def execute_workflow(
     workflow_id: UUID,
-    input_data: dict = {},
+    input_data: dict | None = None,
     current_user: User = Depends(get_current_active_user),
     organization: Organization = Depends(get_current_organization),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Execute workflow
-    Placeholder - actual workflow execution engine will be added later
     """
     result = await db.execute(
         select(Workflow).where(
@@ -221,14 +222,25 @@ async def execute_workflow(
             detail="Workflow not found or inactive"
         )
 
-    # TODO: Implement workflow execution engine
+    execution_result = await workflow_service.execute_workflow(
+        workflow=workflow,
+        input_data=input_data or {},
+        db=db
+    )
+
+    workflow.total_executions += 1
+    workflow.last_executed_at = datetime.utcnow().isoformat()
+
+    if execution_result.get("status") == "completed":
+        workflow.successful_executions += 1
+    else:
+        workflow.failed_executions += 1
+
+    await db.commit()
+    await db.refresh(workflow)
 
     return APIResponse(
         success=True,
-        message="Workflow executed successfully (placeholder)",
-        data={
-            "workflow_id": str(workflow_id),
-            "status": "completed",
-            "execution_time_ms": 1234
-        }
+        message="Workflow executed successfully",
+        data=execution_result
     )

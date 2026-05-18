@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import timedelta
+from uuid import UUID
 import re
 
 from app.core.database import get_db
@@ -17,7 +18,7 @@ from app.core.config import settings
 from app.models.user import User, UserRole
 from app.models.organization import Organization, BillingPlan
 from app.schemas.user import UserCreate, User as UserSchema
-from app.schemas.token import Token
+from app.schemas.token import RefreshTokenRequest, Token
 from app.schemas.api_response import APIResponse
 
 router = APIRouter()
@@ -161,31 +162,39 @@ async def login(
 
 @router.post("/refresh", response_model=APIResponse[Token])
 async def refresh_token(
-    refresh_token: str,
+    payload: RefreshTokenRequest,
     db: AsyncSession = Depends(get_db)
 ):
     """
     Refresh access token using refresh token
     """
     try:
-        payload = decode_token(refresh_token)
+        token_payload = decode_token(payload.refresh_token)
 
-        if payload.get("type") != "refresh":
+        if token_payload.get("type") != "refresh":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token type"
             )
 
-        user_id = payload.get("sub")
+        user_id = token_payload.get("sub")
         if not user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token"
             )
 
+        try:
+            user_uuid = UUID(str(user_id))
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token subject"
+            )
+
         # Get user
         result = await db.execute(
-            select(User).where(User.id == user_id)
+            select(User).where(User.id == user_uuid)
         )
         user = result.scalar_one_or_none()
 
@@ -212,7 +221,9 @@ async def refresh_token(
             )
         )
 
-    except Exception as e:
+    except HTTPException:
+        raise
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token"
