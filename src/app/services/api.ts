@@ -51,7 +51,10 @@ async function fetchJson<T>(url: string, init: RequestInit = {}): Promise<T> {
   const body = isJson ? await response.json() : null;
 
   if (!response.ok) {
-    const message = body?.message ?? body?.errors?.[0] ?? response.statusText;
+    const detail = Array.isArray(body?.detail)
+      ? body.detail.map((item: { msg?: string } | string) => typeof item === "string" ? item : item.msg).filter(Boolean).join(", ")
+      : body?.detail;
+    const message = body?.message ?? body?.errors?.[0] ?? detail ?? response.statusText;
     const error = new Error(message || "Network response was not ok") as Error & {
       status?: number;
       body?: unknown;

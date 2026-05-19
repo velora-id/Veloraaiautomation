@@ -1,0 +1,89 @@
+version: 2
+updates:
+  # Frontend dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "admin"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    commit-message:
+      prefix: "deps(npm):"
+      include: "scope"
+    pull-request-branch-name:
+      separator: "/"
+    rebase-strategy: "auto"
+    groups:
+      development-dependencies:
+        dependency-types:
+          - "dev"
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "npm"
+    milestone: 1
+
+  # Backend Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "admin"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    commit-message:
+      prefix: "deps(python):"
+      include: "scope"
+    pull-request-branch-name:
+      separator: "/"
+    rebase-strategy: "auto"
+    labels:
+      - "dependencies"
+      - "python"
+    milestone: 1
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "10:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "admin"
+    commit-message:
+      prefix: "deps(docker):"
+    labels:
+      - "dependencies"
+      - "docker"
+    milestone: 1
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "thursday"
+      time: "10:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "admin"
+    commit-message:
+      prefix: "deps(github-actions):"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    milestone: 1

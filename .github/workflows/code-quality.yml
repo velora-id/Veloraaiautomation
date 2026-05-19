@@ -1,0 +1,64 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  quality-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        
+    - name: Install pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 11
+        
+    - name: Check frontend dependencies for vulnerabilities
+      run: |
+        pnpm install --frozen-lockfile
+        # Uncomment if you want to use npm audit
+        # npm audit --audit-level=moderate || true
+        
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Check backend dependencies for vulnerabilities
+      working-directory: ./backend
+      run: |
+        python -m pip install --upgrade pip safety
+        pip install -r requirements.txt
+        # Check for known vulnerabilities
+        safety check || true
+        
+    - name: Check file sizes
+      run: |
+        echo "=== Frontend build size check ==="
+        du -sh dist/ 2>/dev/null || echo "Build not found"
+        
+    - name: Analyze repository
+      run: |
+        echo "=== Repository Statistics ==="
+        find . -type f -name "*.tsx" -o -name "*.ts" -o -name "*.py" | wc -l
+        echo "TypeScript/TSX files: $(find src -type f \( -name "*.tsx" -o -name "*.ts" \) 2>/dev/null | wc -l)"
+        echo "Python files: $(find backend -type f -name "*.py" 2>/dev/null | wc -l)"
+        
+    - name: Check code comments ratio
+      run: |
+        echo "=== Code Comments Analysis ==="
+        echo "Frontend components with JSDoc:"
+        grep -r "^\s*/\*\*" src/ --include="*.tsx" --include="*.ts" 2>/dev/null | wc -l || echo "0"

@@ -1,0 +1,39 @@
+# Code ownership configuration for automatic PR assignments
+
+# Default owners for everything in the repo
+* @admin
+
+# Frontend files
+src/ @admin
+*.tsx @admin
+*.ts @admin
+package.json @admin
+pnpm-lock.yaml @admin
+vite.config.ts @admin
+tailwind.config.js @admin
+tsconfig.json @admin
+
+# Backend files
+backend/ @admin
+backend/app/ @admin
+backend/app/api/ @admin
+backend/app/models/ @admin
+backend/app/schemas/ @admin
+backend/app/services/ @admin
+backend/requirements.txt @admin
+backend/Dockerfile @admin
+backend/docker-compose.yml @admin
+
+# Configuration files
+.github/ @admin
+.gitignore @admin
+
+# Documentation
+*.md @admin
+README.md @admin
+IMPLEMENTATION_GUIDE.md @admin
+DEV_SETUP.md @admin
+
+# CI/CD
+.github/workflows/ @admin
+.github/dependabot.yml @admin

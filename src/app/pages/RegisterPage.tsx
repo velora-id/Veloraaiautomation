@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, Navigate, useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -14,8 +14,12 @@ export function RegisterPage() {
   const [password, setPassword] = useState("");
   const [company, setCompany] = useState("");
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const { register, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+
+  if (!isLoading && isAuthenticated) {
+    return <Navigate to="/app" replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,8 +95,12 @@ export function RegisterPage() {
                 placeholder="Create a strong password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                minLength={8}
                 required
               />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Use at least 8 characters with uppercase, lowercase, and a number.
+              </p>
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>

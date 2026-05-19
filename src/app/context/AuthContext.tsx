@@ -20,6 +20,7 @@ interface AuthContextType {
   user: User | null;
   tenant: Tenant | null;
   tenants: Tenant[];
+  isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string, company: string) => Promise<void>;
   logout: () => void;
@@ -45,17 +46,18 @@ interface TokenPayload {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [tenant, setTenant] = useState<Tenant | null>(null);
-  const [tenants] = useState<Tenant[]>([
-    { id: "1", name: "Acme Corp", plan: "enterprise" },
-    { id: "2", name: "Startup Inc", plan: "pro" },
-  ]);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const token = getAccessToken();
     const refreshToken = getRefreshToken();
     if (token && refreshToken) {
-      fetchCurrentUser();
+      fetchCurrentUser().finally(() => setIsLoading(false));
+      return;
     }
+
+    setIsLoading(false);
   }, []);
 
   const fetchCurrentUser = async () => {
@@ -75,15 +77,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         tenantId: data.organization_id,
       });
 
-      setTenant((currentTenant) =>
-        currentTenant?.id === data.organization_id
-          ? currentTenant
-          : {
-              id: data.organization_id,
-              name: "My Organization",
-              plan: "pro",
-            }
-      );
+      const currentOrganization = {
+        id: data.organization_id,
+        name: "My Organization",
+        plan: "free" as const,
+      };
+
+      setTenants([currentOrganization]);
+      setTenant(currentOrganization);
     } catch (error) {
       clearSession();
     }
@@ -151,6 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         tenant,
         tenants,
+        isLoading,
         login,
         register,
         logout,

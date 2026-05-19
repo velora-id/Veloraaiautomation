@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, Navigate, useLocation, useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -12,8 +12,14 @@ export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? "/app";
+
+  if (!isLoading && isAuthenticated) {
+    return <Navigate to={from} replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +27,7 @@ export function LoginPage() {
     try {
       await login(email, password);
       toast.success("Welcome back!");
-      navigate("/app");
+      navigate(from, { replace: true });
     } catch (error) {
       toast.error((error as Error).message || "Invalid credentials");
     } finally {
@@ -85,12 +91,6 @@ export function LoginPage() {
           <Link to="/register" className="text-purple-600 font-medium hover:underline">
             Sign up
           </Link>
-        </div>
-
-        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">
-          <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-            Demo credentials: any email/password
-          </p>
         </div>
       </Card>
     </div>

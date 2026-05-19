@@ -1,58 +1,108 @@
 import { createBrowserRouter } from "react-router";
-import { LandingPage } from "./pages/LandingPage";
-import { LoginPage } from "./pages/LoginPage";
-import { RegisterPage } from "./pages/RegisterPage";
-import { DashboardLayout } from "./layouts/DashboardLayout";
-import { Dashboard } from "./pages/Dashboard";
-import { AgentsPage } from "./pages/AgentsPage";
-import { WorkflowsPage } from "./pages/WorkflowsPage";
-import { LeadsPage } from "./pages/LeadsPage";
-import { IntegrationsPage } from "./pages/IntegrationsPage";
-import { AnalyticsPage } from "./pages/AnalyticsPage";
-import { BillingPage } from "./pages/BillingPage";
-import { TeamSettingsPage } from "./pages/TeamSettingsPage";
-import { PartnerPortalPage } from "./pages/PartnerPortalPage";
-import { AdminDashboardPage } from "./pages/AdminDashboardPage";
-import { PricingPage } from "./pages/PricingPage";
-import { NotFound } from "./pages/NotFound";
-import { ActivitiesPage } from "./pages/ActivitiesPage";
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    Component: LandingPage,
+    lazy: async () => ({
+      Component: (await import("./pages/LandingPage")).LandingPage,
+    }),
   },
   {
     path: "/pricing",
-    Component: PricingPage,
+    lazy: async () => ({
+      Component: (await import("./pages/PricingPage")).PricingPage,
+    }),
   },
   {
     path: "/login",
-    Component: LoginPage,
+    lazy: async () => ({
+      Component: (await import("./pages/LoginPage")).LoginPage,
+    }),
   },
   {
     path: "/register",
-    Component: RegisterPage,
+    lazy: async () => ({
+      Component: (await import("./pages/RegisterPage")).RegisterPage,
+    }),
   },
   {
     path: "/app",
-    Component: DashboardLayout,
+    lazy: async () => ({
+      Component: (await import("./layouts/DashboardLayout")).DashboardLayout,
+    }),
     children: [
-      { index: true, Component: Dashboard },
-      { path: "agents", Component: AgentsPage },
-      { path: "workflows", Component: WorkflowsPage },
-      { path: "leads", Component: LeadsPage },
-      { path: "integrations", Component: IntegrationsPage },
-      { path: "analytics", Component: AnalyticsPage },
-      { path: "activities", Component: ActivitiesPage },
-      { path: "billing", Component: BillingPage },
-      { path: "settings/team", Component: TeamSettingsPage },
-      { path: "partner", Component: PartnerPortalPage },
-      { path: "admin", Component: AdminDashboardPage },
+      {
+        index: true,
+        lazy: async () => ({
+          Component: (await import("./pages/Dashboard")).Dashboard,
+        }),
+      },
+      {
+        path: "agents",
+        lazy: async () => ({
+          Component: (await import("./pages/AgentsPage")).AgentsPage,
+        }),
+      },
+      {
+        path: "workflows",
+        lazy: async () => ({
+          Component: (await import("./pages/WorkflowsPage")).WorkflowsPage,
+        }),
+      },
+      {
+        path: "leads",
+        lazy: async () => ({
+          Component: (await import("./pages/LeadsPage")).LeadsPage,
+        }),
+      },
+      {
+        path: "integrations",
+        lazy: async () => ({
+          Component: (await import("./pages/IntegrationsPage")).IntegrationsPage,
+        }),
+      },
+      {
+        path: "analytics",
+        lazy: async () => ({
+          Component: (await import("./pages/AnalyticsPage")).AnalyticsPage,
+        }),
+      },
+      {
+        path: "activities",
+        lazy: async () => ({
+          Component: (await import("./pages/ActivitiesPage")).ActivitiesPage,
+        }),
+      },
+      {
+        path: "billing",
+        lazy: async () => ({
+          Component: (await import("./pages/BillingPage")).BillingPage,
+        }),
+      },
+      {
+        path: "settings/team",
+        lazy: async () => ({
+          Component: (await import("./pages/TeamSettingsPage")).TeamSettingsPage,
+        }),
+      },
+      {
+        path: "partner",
+        lazy: async () => ({
+          Component: (await import("./pages/PartnerPortalPage")).PartnerPortalPage,
+        }),
+      },
+      {
+        path: "admin",
+        lazy: async () => ({
+          Component: (await import("./pages/AdminDashboardPage")).AdminDashboardPage,
+        }),
+      },
     ],
   },
   {
     path: "*",
-    Component: NotFound,
+    lazy: async () => ({
+      Component: (await import("./pages/NotFound")).NotFound,
+    }),
   },
 ]);

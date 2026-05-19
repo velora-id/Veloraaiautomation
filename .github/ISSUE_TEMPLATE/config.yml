@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: GitHub Discussions
+    url: https://github.com/YOUR_USERNAME/Veloraaiautomation/discussions
+    about: Ask questions and share ideas
+  - name: Documentation
+    url: https://github.com/YOUR_USERNAME/Veloraaiautomation/blob/main/README.md
+    about: Read our project documentation
+  - name: Issue Tracker
+    url: https://github.com/YOUR_USERNAME/Veloraaiautomation/issues
+    about: Report bugs or request features

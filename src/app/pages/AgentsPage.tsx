@@ -302,8 +302,10 @@ export function AgentsPage() {
       const response = await post<APIResponse<{ output?: string }>>(
         `/agents/${agentId}/execute`,
         {
-          input_text:
-            testInput || `Run ${agentName} using your agent settings`,
+          input_text: testInput || `Run ${agentName} using your agent settings`,
+          context: {
+            source: "agents_page",
+          },
         }
       );
       toast.success(response.message || `${agentName} executed successfully`);

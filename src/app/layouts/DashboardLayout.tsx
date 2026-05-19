@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from "react-router";
+import { Navigate, Outlet, Link, useLocation } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard,
@@ -55,14 +55,23 @@ const adminNavigation = [
 ];
 
 export function DashboardLayout() {
-  const { user, tenant, tenants, logout, switchTenant } = useAuth();
+  const { user, tenant, tenants, isLoading, logout, switchTenant } = useAuth();
   const { theme, setTheme } = useTheme();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+        <div className="size-10 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
+          <Bot className="size-6 text-white animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
   if (!user || !tenant) {
-    window.location.href = "/login";
-    return null;
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   const isActive = (href: string) => {
