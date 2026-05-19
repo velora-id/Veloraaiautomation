@@ -18,6 +18,8 @@
 - 📖 **[Backend API Documentation](backend/API_DOCUMENTATION.md)** - Complete API reference
 - 🧪 **[Testing Guide](backend/TESTING_GUIDE.md)** - How to run tests
 - 🚀 **[Quick Start](backend/QUICKSTART.md)** - Setup instructions
+- 💰 **[Investor Relations](INVESTOR_RELATIONS.md)** - Series A opportunity
+- 📈 **[Investor Page](http://localhost:5173/investors)** - Interactive pitch page
 
 ---
 
