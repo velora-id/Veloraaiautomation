@@ -12,12 +12,14 @@
 
 ## 📋 Quick Links
 
+- 🐳 **[Docker Setup Guide](DOCKER_SETUP.md)** - Install locally with Docker (5 min)
+- � **[Docker Troubleshooting](DOCKER_TROUBLESHOOTING.md)** - Fix common Docker issues
+- �🚀 **[Quick Start](backend/QUICKSTART.md)** - Setup instructions
+- 📖 **[Backend API Documentation](backend/API_DOCUMENTATION.md)** - Complete API reference
+- 🧪 **[Testing Guide](backend/TESTING_GUIDE.md)** - How to run tests
 - 🧪 **[Backend Testing Complete](BACKEND_COMPLETION_REPORT.md)** - 45 tests, 100% passing
 - 📊 **[Project Status](PROJECT_STATUS_REPORT.md)** - Architecture & deployment info
 - ✅ **[Completion Checklist](COMPLETION_CHECKLIST.md)** - All tasks verified
-- 📖 **[Backend API Documentation](backend/API_DOCUMENTATION.md)** - Complete API reference
-- 🧪 **[Testing Guide](backend/TESTING_GUIDE.md)** - How to run tests
-- 🚀 **[Quick Start](backend/QUICKSTART.md)** - Setup instructions
 - 💰 **[Investor Relations](INVESTOR_RELATIONS.md)** - Series A opportunity
 - 📈 **[Investor Page](http://localhost:5173/investors)** - Interactive pitch page
 
